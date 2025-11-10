@@ -1,0 +1,6 @@
+cc_library(
+    name = "headers",
+    hdrs = glob(["**/*.hpp"]),
+    includes = ["."],  # headers can be included as #include "lidbsdb.hpp"
+    visibility = ["//visibility:public"],
+)

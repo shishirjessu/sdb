@@ -1,0 +1,13 @@
+IndentCaseLabels: true
+AlwaysBreakTemplateDeclarations: true
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+NamespaceIndentation: All
+PointerAlignment: Left
+BasedOnStyle: LLVM  # Or any other base style you prefer
+IndentWidth: 4      # Number of spaces per indentation level
+TabWidth: 4         # Number of spaces per tab (relevant if you use tabs)
+UseTab: Never       # Use spaces instead of tabs (set to "Always" to use tabs)
+
