@@ -2,9 +2,8 @@
 
 cc_library(
     name = "libsdb",
-    srcs = ["libsdb.cpp"],
+    srcs = ["libsdb.cpp", "process.cpp"],
     deps = ["//include:headers"],
-    hdrs = glob(["include/**/*.h"]),
     includes = ["include", "//include"],
     visibility = ["//visibility:public"],
     copts = ["-std=c++20"],
