@@ -1,7 +1,8 @@
 cc_test(
     name = "test",
-    srcs = ["test_main.cpp"],
+    srcs = glob(["**/*.cpp"]),
     deps = [
-        "@googletest//:gtest_main",
+        "@googletest//:gtest_main", 
+        "//src:libsdb",
     ],
 )
