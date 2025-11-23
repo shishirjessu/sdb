@@ -7,53 +7,57 @@
 #include <sys/wait.h>
 
 namespace sdb {
-    std::unique_ptr<Process> Process::attach(pid_t pid) {
-        if (pid <= 0) {
+    std::unique_ptr<Process> Process::attach(pid_t aPid) {
+        if (aPid <= 0) {
             throw std::runtime_error("invalid pid");
         }
-        if (ptrace(PTRACE_ATTACH, pid, nullptr, nullptr) < 0) {
+        if (ptrace(PTRACE_ATTACH, aPid, nullptr, nullptr) < 0) {
             std::perror("attach failed");
         }
 
         auto myProcess =
-            std::unique_ptr<Process>(new Process(pid, Origin::ATTACHED));
+            std::unique_ptr<Process>(new Process(aPid, Origin::ATTACHED));
         myProcess->wait_on_signal();
 
         return myProcess;
     }
 
     std::unique_ptr<Process>
-    Process::launch(const std::filesystem::path& path) {
-        pid_t pid = fork();
-        if (pid < 0) {
+    Process::launch(const std::filesystem::path& aPath) {
+        pid_t myPid = fork();
+        if (myPid < 0) {
             std::perror("fork failed");
 
-        } else if (pid == 0) {
-            if (ptrace(PTRACE_TRACEME, pid, nullptr, nullptr) < 0) {
+        } else if (myPid == 0) {
+            if (ptrace(PTRACE_TRACEME, myPid, nullptr, nullptr) < 0) {
                 std::perror("trace failed");
                 return {};
             }
-            const char* myPathStr = path.c_str();
+            const char* myPathStr = aPath.c_str();
 
-            if (execlp(myPathStr, myPathStr) < 0) {
+            if (execlp(myPathStr, myPathStr, nullptr) < 0) {
                 std::perror("exec failed");
                 return {};
             }
         }
 
         auto myProcess =
-            std::unique_ptr<Process>(new Process(pid, Origin::LAUNCHED));
+            std::unique_ptr<Process>(new Process(myPid, Origin::LAUNCHED));
         myProcess->wait_on_signal();
 
         return myProcess;
     }
 
-    void Process::wait_on_signal() {
-        int status = 0;
-        if ((waitpid(thePid, std::addressof(status), 0)) < 0) {
+    StopReason Process::wait_on_signal() {
+        int myStatus = 0;
+        if ((waitpid(thePid, std::addressof(myStatus), 0)) < 0) {
             std::perror("waitpid failed");
             std::terminate();
         }
+
+        StopReason myStopReason(myStatus);
+        theProcessState = myStopReason.theStopState;
+        return myStopReason;
     }
 
     void Process::resume() {
@@ -61,6 +65,8 @@ namespace sdb {
             std::perror("continue failed");
             std::terminate();
         }
+
+        theProcessState = ProcessState::Running;
     }
 
     pid_t Process::get_pid() const {
@@ -68,8 +74,16 @@ namespace sdb {
     }
 
     Process::~Process() {
-        if (theOrigin == Origin::LAUNCHED) {
+        if (thePid == 0) {
+            return;
         }
+
+        if (theProcessState == ProcessState::Running) {
+            kill(thePid, SIGSTOP);
+        }
+
+        ptrace(PTRACE_DETACH, thePid, nullptr, nullptr);
+        kill(thePid, theOrigin == Origin::LAUNCHED ? SIGKILL : SIGCONT);
     }
 
 } // namespace sdb

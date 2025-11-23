@@ -2,7 +2,7 @@
 
 cc_library(
     name = "libsdb",
-    srcs = ["libsdb.cpp", "process.cpp"],
+    srcs = glob(["**/*.cpp"]),
     deps = ["//include:headers"],
     includes = ["include", "//include"],
     visibility = ["//visibility:public"],

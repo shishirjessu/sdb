@@ -4,21 +4,39 @@
 #include <process.hpp>
 #include <string>
 #include <unistd.h> // for pid_t
+#include <utils.hpp>
 
 #include <iostream>
 #include <ranges>
 #include <string>
 #include <vector>
 
-std::vector<std::string> split(const std::string& str, char delimiter) {
-    std::vector<std::string> result;
+void readInput(std::unique_ptr<sdb::Process>& myProcess) {
+    char* line = nullptr;
+    while ((line = readline("sdb> ")) != nullptr) {
+        std::string line_str{};
 
-    for (auto&& part : str | std::views::split(delimiter)) {
-        // Convert subrange of chars to string
-        result.emplace_back(part.begin(), part.end());
+        if (line == std::string_view("")) {
+            if (history_length > 0) {
+                line_str = history_list()[history_length - 1]->line;
+            }
+        } else {
+            line_str = line;
+            add_history(line);
+        }
+
+        auto args = sdb::split(line_str, ' ');
+        std::string command = args[0];
+
+        if (sdb::isPrefix("continue", command)) {
+            myProcess->resume();
+            myProcess->wait_on_signal();
+        } else {
+            std::cerr << "unknown command\n";
+        }
+
+        free(line);
     }
-
-    return result;
 }
 
 int main(int argc, char** argv) {
@@ -51,39 +69,5 @@ int main(int argc, char** argv) {
         myProcess = sdb::Process::launch(filename);
     }
 
-    char* line = nullptr;
-    while ((line = readline("sdb> ")) != nullptr) {
-        std::string line_str{};
-
-        if (line == std::string_view("")) {
-            if (history_length > 0) {
-                line_str = history_list()[history_length - 1]->line;
-            }
-        } else {
-            line_str = line;
-            add_history(line);
-        }
-
-        auto args = split(line_str, ' ');
-        std::string command = args[0];
-
-        if (command.starts_with("continue")) {
-            myProcess->resume();
-            myProcess->wait_on_signal();
-        } else {
-            std::cerr << "unknown command";
-        }
-
-        free(line);
-    }
-
-    /*
-    while (user input exists)
-        if line is empty
-            use last line if exists
-
-        handle command
-        add history
-        free line
-    */
+    readInput(myProcess);
 }
