@@ -1,6 +1,7 @@
 #include <process.hpp>
 
 #include <cstdio>
+#include <error.hpp>
 #include <stdexcept>
 #include <sys/ptrace.h>
 #include <sys/types.h>
@@ -12,7 +13,7 @@ namespace sdb {
             throw std::runtime_error("invalid pid");
         }
         if (ptrace(PTRACE_ATTACH, aPid, nullptr, nullptr) < 0) {
-            std::perror("attach failed");
+            Error::sendErrno("attach failed\n");
         }
 
         auto myProcess =
@@ -26,17 +27,17 @@ namespace sdb {
     Process::launch(const std::filesystem::path& aPath) {
         pid_t myPid = fork();
         if (myPid < 0) {
-            std::perror("fork failed");
+            Error::sendErrno("fork failed\n");
 
         } else if (myPid == 0) {
             if (ptrace(PTRACE_TRACEME, myPid, nullptr, nullptr) < 0) {
-                std::perror("trace failed");
+                Error::sendErrno("trace failed\n");
                 return {};
             }
             const char* myPathStr = aPath.c_str();
 
             if (execlp(myPathStr, myPathStr, nullptr) < 0) {
-                std::perror("exec failed");
+                Error::sendErrno("exec failed\n");
                 return {};
             }
         }
@@ -51,7 +52,7 @@ namespace sdb {
     StopReason Process::wait_on_signal() {
         int myStatus = 0;
         if ((waitpid(thePid, std::addressof(myStatus), 0)) < 0) {
-            std::perror("waitpid failed");
+            Error::sendErrno("waitpid failed\n");
             std::terminate();
         }
 
@@ -62,7 +63,7 @@ namespace sdb {
 
     void Process::resume() {
         if (ptrace(PTRACE_CONT, thePid, nullptr, nullptr) < 0) {
-            std::perror("continue failed");
+            Error::sendErrno("continue failed\n");
             std::terminate();
         }
 
