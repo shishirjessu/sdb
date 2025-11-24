@@ -30,7 +30,7 @@ void readInput(std::unique_ptr<sdb::Process>& myProcess) {
 
         if (sdb::isPrefix("continue", command)) {
             myProcess->resume();
-            myProcess->wait_on_signal();
+            myProcess->waitOnSignal();
         } else {
             std::cerr << "unknown command\n";
         }

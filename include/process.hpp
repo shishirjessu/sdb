@@ -7,7 +7,8 @@
 #include <sys/types.h>
 
 namespace sdb {
-    enum struct Origin { LAUNCHED, ATTACHED };
+
+    enum struct Origin { LAUNCHED, LAUNCHED_AND_ATTACHED, ATTACHED };
 
     enum struct ProcessState { Running, Exited, Stopped, Terminated };
 
@@ -34,7 +35,7 @@ namespace sdb {
       public:
         static std::unique_ptr<Process> attach(pid_t aPid);
         static std::unique_ptr<Process>
-        launch(const std::filesystem::path& aPath);
+        launch(const std::filesystem::path& aPath, bool aDebug = true);
 
         Process() = delete;
         Process(const Process& other) = delete;
@@ -43,19 +44,21 @@ namespace sdb {
         Process(Process&& other) = delete;
         Process& operator=(Process&& other) = delete;
 
-        pid_t get_pid() const;
+        pid_t getPid() const;
 
-        StopReason wait_on_signal();
+        StopReason waitOnSignal();
         void resume();
 
         ~Process();
 
       private:
-        Process(pid_t aPid, Origin origin) : thePid{aPid}, theOrigin{origin} {
+        Process(pid_t aPid, Origin origin, bool anIsAttached)
+            : thePid{aPid}, theOrigin{origin}, theIsAttached{anIsAttached} {
         }
 
         pid_t thePid{};
         Origin theOrigin{};
         ProcessState theProcessState{ProcessState::Stopped};
+        bool theIsAttached{false};
     };
 } // namespace sdb
