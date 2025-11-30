@@ -4,11 +4,14 @@
 #include <error.hpp>
 #include <iostream>
 #include <pipe.hpp>
+#include <register_info.hpp>
+#include <types.hpp>
 
 #include <stdexcept>
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <utility>
 
 namespace sdb {
 
@@ -101,6 +104,11 @@ namespace sdb {
 
         StopReason myStopReason(myStatus);
         theProcessState = myStopReason.theStopState;
+
+        if (theProcessState == ProcessState::Stopped and theIsAttached) {
+            readAllRegisters();
+        }
+
         return myStopReason;
     }
 
@@ -115,6 +123,48 @@ namespace sdb {
 
     pid_t Process::getPid() const {
         return thePid;
+    }
+
+    void Process::writeFloatingPointRegisters(const user_fpregs_struct& fprs) {
+        if (ptrace(PTRACE_GETFPREGS, thePid, nullptr, std::addressof(fprs)) <
+            0) {
+            Error::send("Could not write floating point registers");
+        }
+    }
+
+    void Process::writeUserArea(std::size_t anOffset, std::uint64_t aData) {
+        if (ptrace(PTRACE_POKEUSER, thePid, anOffset, aData) < 0) {
+            Error::send("Could not write register to user area");
+        }
+    }
+
+    void Process::readAllRegisters() {
+        auto& myRegisterData = theRegisters.getRegisterData();
+        if (ptrace(PTRACE_GETREGS, thePid, nullptr, myRegisterData.regs) < 0) {
+            Error::sendErrno("Could not read general-purpose registers");
+        }
+
+        if (ptrace(PTRACE_GETFPREGS, thePid, nullptr, myRegisterData.i387) <
+            0) {
+            Error::sendErrno("Could not read floating-point registers");
+        }
+
+        for (int i = 0; i < 8; ++i) {
+            RegisterId myRegisterId =
+                RegisterId{toUnderlying(RegisterId::dr0) + i};
+            auto& myRegisterInfo = findRegisterById(myRegisterId);
+
+            errno = 0;
+            std::int64_t myRegisterValue = ptrace(
+                PTRACE_PEEKUSER, thePid, myRegisterInfo.theOffset, nullptr);
+
+            if (errno != 0) {
+                Error::sendErrno("Could not read debug register " +
+                                 std::to_string(i));
+            }
+
+            myRegisterData.u_debugreg[i] = myRegisterValue;
+        }
     }
 
     Process::~Process() {

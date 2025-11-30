@@ -1,4 +1,5 @@
 #include <pipe.hpp>
+#include <register_info.hpp>
 
 #include <fcntl.h>
 #include <unistd.h>

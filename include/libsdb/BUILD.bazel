@@ -1,6 +1,6 @@
 cc_library(
-    name = "headers",
-    hdrs = glob(["**/*.hpp"]),
+    name = "libsdb",
+    hdrs = glob(["**/*.hpp", "**/*.inc"]),
     includes = ["."],
     visibility = ["//visibility:public"],
 )

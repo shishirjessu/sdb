@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <registers.hpp>
 #include <string_view>
 #include <sys/ptrace.h>
 #include <sys/types.h>
@@ -49,6 +50,17 @@ namespace sdb {
         StopReason waitOnSignal();
         void resume();
 
+        Registers& getRegisters() {
+            return theRegisters;
+        }
+
+        const Registers& getRegisters() const {
+            return theRegisters;
+        }
+
+        void writeFloatingPointRegisters(const user_fpregs_struct& fprs);
+        void writeUserArea(std::size_t anOffset, std::uint64_t aData);
+
         ~Process();
 
       private:
@@ -56,9 +68,13 @@ namespace sdb {
             : thePid{aPid}, theOrigin{origin}, theIsAttached{anIsAttached} {
         }
 
+        void readAllRegisters();
+
         pid_t thePid{};
         Origin theOrigin{};
         ProcessState theProcessState{ProcessState::Stopped};
         bool theIsAttached{false};
+
+        Registers theRegisters{*this};
     };
 } // namespace sdb
