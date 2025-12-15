@@ -140,11 +140,12 @@ namespace sdb {
 
     void Process::readAllRegisters() {
         auto& myRegisterData = theRegisters.getRegisterData();
-        if (ptrace(PTRACE_GETREGS, thePid, nullptr, myRegisterData.regs) < 0) {
+        if (ptrace(PTRACE_GETREGS, thePid, nullptr,
+                   std::addressof(myRegisterData.regs)) < 0) {
             Error::sendErrno("Could not read general-purpose registers");
         }
-
-        if (ptrace(PTRACE_GETFPREGS, thePid, nullptr, myRegisterData.i387) <
+        if (ptrace(PTRACE_GETFPREGS, thePid, nullptr,
+                   std::addressof(myRegisterData.i387)) < 0) {
             0) {
             Error::sendErrno("Could not read floating-point registers");
         }
