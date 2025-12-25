@@ -58,5 +58,14 @@ namespace sdb::test {
 
         output = myPipe.read();
         EXPECT_EQ(toStringView(output), "0xabcdef");
+
+        // write xmm0 and resume til 4th trap
+        myRegisters.write(findRegisterById(RegisterId::xmm0), 67.21);
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        output = myPipe.read();
+        EXPECT_EQ(toStringView(output), "67.21");
     }
+
 } // namespace sdb::test

@@ -53,6 +53,8 @@ namespace sdb {
                     return toByte128(static_cast<double>(aValue));
                 } else if (myRegisterFormat == RegisterFormat::LongDouble) {
                     return toByte128(static_cast<long double>(aValue));
+                } else if (myRegisterFormat == RegisterFormat::Vector) {
+                    return toByte128(aValue);
                 }
             } else if constexpr (std::is_signed_v<T>) {
                 if (aRegisterInfo.theSize == 8) {

@@ -3,6 +3,7 @@
 .section .data 
 
 hex_format: .asciz "%#x"
+float_format: .asciz "%.2f"
 
 .section .text 
 
@@ -54,6 +55,15 @@ main:
     movq %mm0, %rsi
     print_rsi
     trap 
+
+    # place the float format specifier in the first argument
+    leaq float_format(%rip), %rdi
+    # denotes there is 1 vector argument
+    movq $1, %rax 
+    call printf@plt 
+    movq $0, %rdi
+    call fflush@plt
+    trap
 
     # pop off the initial value of rbp, and return with 0 
     # exit code
