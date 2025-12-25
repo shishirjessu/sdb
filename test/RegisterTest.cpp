@@ -66,6 +66,19 @@ namespace sdb::test {
 
         output = myPipe.read();
         EXPECT_EQ(toStringView(output), "67.21");
+
+        // write st0 and resume til last trap
+        myRegisters.write(findRegisterById(RegisterId::st0), 67.21l);
+        myRegisters.write(findRegisterById(RegisterId::fsw),
+                          std::uint16_t{0b0011100000000000});
+        myRegisters.write(findRegisterById(RegisterId::ftw),
+                          std::uint16_t{0b0011111111111111});
+
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        output = myPipe.read();
+        EXPECT_EQ(toStringView(output), "67.21");
     }
 
 } // namespace sdb::test
