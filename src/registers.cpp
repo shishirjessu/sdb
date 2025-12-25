@@ -44,8 +44,8 @@ namespace sdb {
 
     void Registers::write(const RegisterInfo& aRegisterInfo,
                           RegisterValueT aValue) {
-        auto myRegisterInfoBytes = asBytes(theRegisterData);
-        auto myDataAddr = myRegisterInfoBytes + aRegisterInfo.theOffset;
+        auto myRegisterInfoAddr = asBytes(theRegisterData);
+        auto myDataAddr = myRegisterInfoAddr + aRegisterInfo.theOffset;
 
         std::visit(
             [&](auto& aConcreteValue) {
@@ -74,7 +74,7 @@ namespace sdb {
 
         theProcess.writeUserArea(
             myAlignedOffset,
-            fromBytes<std::uint64_t>(myDataAddr + myAlignedOffset));
+            fromBytes<std::uint64_t>(myRegisterInfoAddr + myAlignedOffset));
     }
 
 } // namespace sdb
