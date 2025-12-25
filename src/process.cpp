@@ -133,15 +133,23 @@ namespace sdb {
     }
 
     void Process::writeFloatingPointRegisters(const user_fpregs_struct& fprs) {
-        if (ptrace(PTRACE_GETFPREGS, thePid, nullptr, std::addressof(fprs)) <
+        if (ptrace(PTRACE_SETFPREGS, thePid, nullptr, std::addressof(fprs)) <
             0) {
             Error::send("Could not write floating point registers");
         }
     }
 
+    void Process::writeGeneralPurposeRegisters(const user_regs_struct& gprs) {
+        if (ptrace(PTRACE_SETREGS, thePid, nullptr, std::addressof(gprs)) < 0) {
+            Error::send("Could not write general purpose registers");
+        }
+    }
+
     void Process::writeUserArea(std::size_t anOffset, std::uint64_t aData) {
         if (ptrace(PTRACE_POKEUSER, thePid, anOffset, aData) < 0) {
-            Error::send("Could not write register to user area");
+            int err = errno;
+            Error::send(std::string("Could not write register: ") +
+                        std::strerror(err));
         }
     }
 

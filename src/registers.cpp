@@ -64,17 +64,19 @@ namespace sdb {
 
         if (aRegisterInfo.theRegisterType == RegisterType::fpr) {
             theProcess.writeFloatingPointRegisters(theRegisterData.i387);
+        } else if (aRegisterInfo.theRegisterType == RegisterType::gpr) {
+            theProcess.writeGeneralPurposeRegisters(theRegisterData.regs);
+        } else {
+            // rounds down to nearest multiple of 8 to avoid issues with reading
+            // high 8-bit registers such as ah, bh, etc. Still valid because we
+            // are reading the data 64 bits at a time anyway, so it should be
+            // starting from the address of the 64 bits
+            auto myAlignedOffset = aRegisterInfo.theOffset & ~0b111;
+
+            theProcess.writeUserArea(
+                myAlignedOffset,
+                fromBytes<std::uint64_t>(myRegisterInfoAddr + myAlignedOffset));
         }
-
-        // rounds down to nearest multiple of 8 to avoid issues with reading
-        // high 8-bit registers such as ah, bh, etc. Still valid because we are
-        // reading the data 64 bits at a time anyway, so it should be starting
-        // from the address of the 64 bits
-        auto myAlignedOffset = aRegisterInfo.theOffset & ~0b111;
-
-        theProcess.writeUserArea(
-            myAlignedOffset,
-            fromBytes<std::uint64_t>(myRegisterInfoAddr + myAlignedOffset));
     }
 
 } // namespace sdb

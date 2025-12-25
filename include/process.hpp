@@ -60,6 +60,7 @@ namespace sdb {
         }
 
         void writeFloatingPointRegisters(const user_fpregs_struct& fprs);
+        void writeGeneralPurposeRegisters(const user_regs_struct& grps);
         void writeUserArea(std::size_t anOffset, std::uint64_t aData);
 
         ~Process();
