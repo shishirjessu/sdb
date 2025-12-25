@@ -15,6 +15,17 @@ hex_format: .asciz "%#x"
     syscall
 .endm
 
+# print out value of rsi, since rsi
+# is 2nd argument. This matches a call
+# to printf(format_string, thing_to_print)
+.macro print_rsi
+    leaq hex_format(%rip), %rdi
+    movq $0, %rax 
+    call printf@plt 
+    movq $0, %rdi
+    call fflush@plt
+.endm
+
 # program entry point
 main:
     # rbp contains start of stack frame. Save it 
@@ -35,11 +46,13 @@ main:
 
     trap
 
-    leaq hex_format(%rip), %rdi
-    movq $0, %rax 
-    call printf@plt 
-    movq $0, %rdi
-    call fflush@plt
+    print_rsi
+    trap 
+
+    # For 2nd part of test, move mm0 value into 
+    # rsi then print rsi again
+    movq %mm0, %rsi
+    print_rsi
     trap 
 
     # pop off the initial value of rbp, and return with 0 

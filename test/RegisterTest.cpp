@@ -28,6 +28,7 @@ namespace sdb::test {
     } // namespace
 
     TEST(RegisterTest, GeneralPurposeRegisterWrite) {
+        // set up test and run child proc until first trap
         Pipe myPipe{false};
 
         auto myProc =
@@ -38,20 +39,24 @@ namespace sdb::test {
         myProc->resume();
         myProc->waitOnSignal();
 
+        // write rsi and resume til 2nd trap
         auto& myRegisters = myProc->getRegisters();
 
         myRegisters.write(findRegisterById(RegisterId::rsi), 0xcafecafe);
-
-        // test the value we write to the local user struct can be obtained
-        RegisterValueT myValue =
-            myRegisters.read(findRegisterById(RegisterId::rsi));
-        auto myVal = std::get<uint64_t>(myValue);
-        EXPECT_EQ(myVal, 0xcafecafe);
 
         myProc->resume();
         myProc->waitOnSignal();
 
         auto output = myPipe.read();
         EXPECT_EQ(toStringView(output), "0xcafecafe");
+
+        // write mm0 and resume til 3rd trap
+        myRegisters.write(findRegisterById(RegisterId::mm0), 0xabcdef);
+
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        output = myPipe.read();
+        EXPECT_EQ(toStringView(output), "0xabcdef");
     }
 } // namespace sdb::test
