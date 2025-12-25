@@ -36,7 +36,8 @@ namespace sdb {
       public:
         static std::unique_ptr<Process> attach(pid_t aPid);
         static std::unique_ptr<Process>
-        launch(const std::filesystem::path& aPath, bool aDebug = true);
+        launch(const std::filesystem::path& aPath, bool aDebug = true,
+               std::optional<int> aStdoutReplacement = std::nullopt);
 
         Process() = delete;
         Process(const Process& other) = delete;

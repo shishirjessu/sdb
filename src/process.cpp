@@ -30,7 +30,6 @@ namespace sdb {
             if (data.size() > 0) {
                 waitpid(aPid, nullptr, 0);
                 char* myErrorMessage = reinterpret_cast<char*>(data.data());
-                std::cout << myErrorMessage << '\n';
                 Error::send(
                     std::string(myErrorMessage, myErrorMessage + data.size()));
             }
@@ -57,8 +56,9 @@ namespace sdb {
         return myProcess;
     }
 
-    std::unique_ptr<Process> Process::launch(const std::filesystem::path& aPath,
-                                             bool aDebug) {
+    std::unique_ptr<Process>
+    Process::launch(const std::filesystem::path& aPath, bool aDebug,
+                    std::optional<int> aStdoutReplacement) {
         Pipe myChildToParentPipe{};
 
         pid_t myPid = fork();
@@ -67,6 +67,13 @@ namespace sdb {
 
         } else if (myPid == 0) {
             myChildToParentPipe.closeRead();
+
+            if (aStdoutReplacement.has_value()) {
+                if (dup2(aStdoutReplacement.value(), STDOUT_FILENO) < 0) {
+                    exitWithPerror(myChildToParentPipe,
+                                   "stdout replacement failed!");
+                }
+            }
 
             if (aDebug and
                 ptrace(PTRACE_TRACEME, myPid, nullptr, nullptr) < 0) {
@@ -144,9 +151,9 @@ namespace sdb {
                    std::addressof(myRegisterData.regs)) < 0) {
             Error::sendErrno("Could not read general-purpose registers");
         }
+
         if (ptrace(PTRACE_GETFPREGS, thePid, nullptr,
                    std::addressof(myRegisterData.i387)) < 0) {
-            0) {
             Error::sendErrno("Could not read floating-point registers");
         }
 

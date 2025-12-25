@@ -5,4 +5,7 @@ cc_test(
         "@googletest//:gtest_main", 
         "//src:libsdb",
     ],
+    data = [
+        "//test/targets:reg_write",
+    ]
 )

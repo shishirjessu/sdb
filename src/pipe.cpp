@@ -6,8 +6,8 @@
 
 namespace sdb {
 
-    Pipe::Pipe() {
-        if (pipe2(theFDs.data(), O_CLOEXEC) < 0) {
+    Pipe::Pipe(bool aCloseOnExec) : theCloseOnExec{aCloseOnExec} {
+        if (pipe2(theFDs.data(), theCloseOnExec ? O_CLOEXEC : 0) < 0) {
             Error::sendErrno("pipe creation failed");
         }
     }
