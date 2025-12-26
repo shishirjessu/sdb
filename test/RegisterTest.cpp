@@ -27,7 +27,7 @@ namespace sdb::test {
         }
     } // namespace
 
-    TEST(RegisterTest, GeneralPurposeRegisterWrite) {
+    TEST(RegisterTest, WriteRegisters) {
         // set up test and run child proc until first trap
         Pipe myPipe{false};
 
@@ -79,6 +79,49 @@ namespace sdb::test {
 
         output = myPipe.read();
         EXPECT_EQ(toStringView(output), "67.21");
+    }
+
+    TEST(RegisterTest, ReadRegisters) {
+        auto myProc = Process::launch("test/targets/reg_read", true);
+
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        auto& myRegisters = myProc->getRegisters();
+
+        EXPECT_EQ(std::get<uint64_t>(
+                      myRegisters.read(findRegisterById(RegisterId::r13))),
+                  0xcafecafe);
+
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        EXPECT_EQ(std::get<uint8_t>(
+                      myRegisters.read(findRegisterById(RegisterId::r13b))),
+                  49);
+
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        EXPECT_EQ(std::get<Byte64>(
+                      myRegisters.read(findRegisterById(RegisterId::mm0))),
+                  toByte64(0xabcdefull));
+
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        EXPECT_EQ(std::get<Byte128>(
+                      myRegisters.read(findRegisterById(RegisterId::xmm0))),
+                  toByte128(64.125));
+
+        myProc->resume();
+        myProc->waitOnSignal();
+
+        // EXPECT_FLOAT_EQ not needed here bc the denominator is a
+        // power of 2
+        EXPECT_EQ(std::get<long double>(
+                      myRegisters.read(findRegisterById(RegisterId::st0))),
+                  64.125L);
     }
 
 } // namespace sdb::test
