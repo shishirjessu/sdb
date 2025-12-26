@@ -17,18 +17,61 @@
 namespace sdb::test {
 
     namespace {
-        inline std::string_view toStringView(const std::byte* data,
-                                             std::size_t size) {
-            return {reinterpret_cast<const char*>(data), size};
+
+        inline std::string_view toStringView(const std::byte* aData,
+                                             std::size_t aSize) {
+            return {reinterpret_cast<const char*>(aData), aSize};
         }
 
-        std::string_view toStringView(const std::vector<std::byte>& aByteVec) {
-            return toStringView(aByteVec.data(), aByteVec.size());
+        inline std::string_view
+        toStringView(const std::vector<std::byte>& aBytes) {
+            return toStringView(aBytes.data(), aBytes.size());
         }
+
+        inline void resumeToNextTrap(Process& aProc) {
+            aProc.resume();
+            aProc.waitOnSignal();
+        }
+
+        template <typename T>
+        void writeAndExpect(Process& aProc, Pipe& aPipe, RegisterId aRegister,
+                            T aValue, std::string_view aExpected) {
+            aProc.getRegisters().write(findRegisterById(aRegister), aValue);
+            resumeToNextTrap(aProc);
+
+            auto myOutput = aPipe.read();
+            EXPECT_EQ(toStringView(myOutput), aExpected);
+        }
+
+        void writeSt0AndExpect(Process& aProc, Pipe& aPipe, long double aValue,
+                               std::string_view aExpected) {
+            auto& myRegisters = aProc.getRegisters();
+
+            myRegisters.write(findRegisterById(RegisterId::st0), aValue);
+            myRegisters.write(findRegisterById(RegisterId::fsw),
+                              std::uint16_t{0b0011100000000000});
+            myRegisters.write(findRegisterById(RegisterId::ftw),
+                              std::uint16_t{0b0011111111111111});
+
+            resumeToNextTrap(aProc);
+
+            auto myOutput = aPipe.read();
+            EXPECT_EQ(toStringView(myOutput), aExpected);
+        }
+
+        template <typename T>
+        void resumeAndExpectRead(Process& aProc, RegisterId aRegister,
+                                 const T& aExpected) {
+            resumeToNextTrap(aProc);
+
+            EXPECT_EQ(std::get<T>(aProc.getRegisters().read(
+                          findRegisterById(aRegister))),
+                      aExpected);
+        }
+
     } // namespace
 
     TEST(RegisterTest, WriteRegisters) {
-        // set up test and run child proc until first trap
         Pipe myPipe{false};
 
         auto myProc =
@@ -36,92 +79,29 @@ namespace sdb::test {
 
         myPipe.closeWrite();
 
-        myProc->resume();
-        myProc->waitOnSignal();
+        resumeToNextTrap(*myProc);
 
-        // write rsi and resume til 2nd trap
-        auto& myRegisters = myProc->getRegisters();
+        writeAndExpect(*myProc, myPipe, RegisterId::rsi, 0xcafecafe,
+                       "0xcafecafe");
 
-        myRegisters.write(findRegisterById(RegisterId::rsi), 0xcafecafe);
+        writeAndExpect(*myProc, myPipe, RegisterId::mm0, 0xabcdef, "0xabcdef");
+        writeAndExpect(*myProc, myPipe, RegisterId::xmm0, 67.21, "67.21");
 
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        auto output = myPipe.read();
-        EXPECT_EQ(toStringView(output), "0xcafecafe");
-
-        // write mm0 and resume til 3rd trap
-        myRegisters.write(findRegisterById(RegisterId::mm0), 0xabcdef);
-
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        output = myPipe.read();
-        EXPECT_EQ(toStringView(output), "0xabcdef");
-
-        // write xmm0 and resume til 4th trap
-        myRegisters.write(findRegisterById(RegisterId::xmm0), 67.21);
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        output = myPipe.read();
-        EXPECT_EQ(toStringView(output), "67.21");
-
-        // write st0 and resume til last trap
-        myRegisters.write(findRegisterById(RegisterId::st0), 67.21l);
-        myRegisters.write(findRegisterById(RegisterId::fsw),
-                          std::uint16_t{0b0011100000000000});
-        myRegisters.write(findRegisterById(RegisterId::ftw),
-                          std::uint16_t{0b0011111111111111});
-
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        output = myPipe.read();
-        EXPECT_EQ(toStringView(output), "67.21");
+        writeSt0AndExpect(*myProc, myPipe, 67.21L, "67.21");
     }
 
     TEST(RegisterTest, ReadRegisters) {
         auto myProc = Process::launch("test/targets/reg_read", true);
 
-        myProc->resume();
-        myProc->waitOnSignal();
+        resumeAndExpectRead<uint64_t>(*myProc, RegisterId::r13, 0xcafecafe);
+        resumeAndExpectRead<uint8_t>(*myProc, RegisterId::r13b, 49);
 
-        auto& myRegisters = myProc->getRegisters();
+        resumeAndExpectRead<Byte64>(*myProc, RegisterId::mm0,
+                                    toByte64(0xabcdefull));
+        resumeAndExpectRead<Byte128>(*myProc, RegisterId::xmm0,
+                                     toByte128(64.125));
 
-        EXPECT_EQ(std::get<uint64_t>(
-                      myRegisters.read(findRegisterById(RegisterId::r13))),
-                  0xcafecafe);
-
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        EXPECT_EQ(std::get<uint8_t>(
-                      myRegisters.read(findRegisterById(RegisterId::r13b))),
-                  49);
-
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        EXPECT_EQ(std::get<Byte64>(
-                      myRegisters.read(findRegisterById(RegisterId::mm0))),
-                  toByte64(0xabcdefull));
-
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        EXPECT_EQ(std::get<Byte128>(
-                      myRegisters.read(findRegisterById(RegisterId::xmm0))),
-                  toByte128(64.125));
-
-        myProc->resume();
-        myProc->waitOnSignal();
-
-        // EXPECT_FLOAT_EQ not needed here bc the denominator is a
-        // power of 2
-        EXPECT_EQ(std::get<long double>(
-                      myRegisters.read(findRegisterById(RegisterId::st0))),
-                  64.125L);
+        resumeAndExpectRead<long double>(*myProc, RegisterId::st0, 64.125L);
     }
 
 } // namespace sdb::test
