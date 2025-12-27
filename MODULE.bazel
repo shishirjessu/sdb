@@ -2,4 +2,4 @@ module(name = "sdb", repo_name = "sdb")
 
 bazel_dep(name = "cli11", version = "2.5.0")
 bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
-
+bazel_dep(name = "fmt", version = "12.1.0")

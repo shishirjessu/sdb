@@ -1,7 +1,7 @@
 cc_binary(
     name = "sdb",
     srcs = ["sdb.cpp"],
-    deps = ["//src:libsdb", "@cli11//:cli11"],
+    deps = ["//src:libsdb", "@cli11//:cli11", "@fmt//:fmt"],
     visibility = ["//visibility:public"],
     copts = [
         "-std=c++20",
