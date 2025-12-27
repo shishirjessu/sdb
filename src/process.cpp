@@ -183,6 +183,11 @@ namespace sdb {
         }
     }
 
+    VirtualAddress Process::getPc() const {
+        return VirtualAddress{std::get<uint64_t>(
+            theRegisters.read(findRegisterById(RegisterId::rip)))};
+    }
+
     Process::~Process() {
         if (thePid == 0) {
             return;

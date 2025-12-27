@@ -59,12 +59,39 @@ void add_reg_writing(CLI::App& aRepl, sdb::Process& aProcess) {
         [&]() { handleRegisterWrite(aProcess, myRegister, myValue); });
 }
 
+void print_stop_reason(const sdb::Process& aProcess,
+                       sdb::StopReason aStopReason) {
+    std::cout << "Process " << aProcess.getPid() << ' ';
+    switch (aStopReason.theStopState) {
+        case sdb::ProcessState::Running: {
+        }
+        case sdb::ProcessState::Exited:
+            std::cout << "exited with status "
+                      << static_cast<int>(aStopReason.theStatus);
+            break;
+        case sdb::ProcessState::Terminated:
+            std::cout << "terminated with signal "
+                      << sigabbrev_np(aStopReason.theStatus);
+            break;
+        case sdb::ProcessState::Stopped: {
+            std::string myMessage =
+                fmt::format("stopped with signal {} at {:#x}",
+                            sigabbrev_np(aStopReason.theStatus),
+                            sdb::toUnderlying(aProcess.getPc()));
+            std::cout << myMessage;
+            break;
+        }
+    }
+    std::cout << '\n';
+}
+
 void add_continue(CLI::App& aRepl, sdb::Process& aProcess) {
     auto continue_cmd = aRepl.add_subcommand("c");
 
     continue_cmd->callback([&]() {
         aProcess.resume();
-        aProcess.waitOnSignal();
+        auto myStopReason = aProcess.waitOnSignal();
+        print_stop_reason(aProcess, myStopReason);
     });
 }
 
