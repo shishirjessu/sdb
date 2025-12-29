@@ -87,7 +87,7 @@ void print_stop_reason(const sdb::Process& aProcess,
 }
 
 void add_continue(CLI::App& aRepl, sdb::Process& aProcess) {
-    auto continue_cmd = aRepl.add_subcommand("c");
+    auto continue_cmd = aRepl.add_subcommand("c", "Continue process");
 
     continue_cmd->callback([&]() {
         aProcess.resume();
@@ -96,10 +96,21 @@ void add_continue(CLI::App& aRepl, sdb::Process& aProcess) {
     });
 }
 
+void add_step(CLI::App& aRepl, sdb::Process& aProcess) {
+    auto step_cmd =
+        aRepl.add_subcommand("s", "Step forward by one instruction");
+
+    step_cmd->callback([&]() {
+        auto myStopReason = aProcess.stepInstruction();
+        print_stop_reason(aProcess, myStopReason);
+    });
+}
+
 void readInput(std::unique_ptr<sdb::Process>& aProcess) {
     CLI::App myRepl;
 
     add_continue(myRepl, *aProcess);
+    add_step(myRepl, *aProcess);
 
     myRepl.add_subcommand("reg", "Register operations");
     add_reg_reading(myRepl, *aProcess);

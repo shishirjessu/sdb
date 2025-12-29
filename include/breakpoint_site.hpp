@@ -40,8 +40,6 @@ namespace sdb {
 
         BreakpointSite() = delete;
 
-        ~BreakpointSite();
-
         BreakpointSite(const BreakpointSite& other) = delete;
         BreakpointSite& operator=(const BreakpointSite& other) = delete;
 

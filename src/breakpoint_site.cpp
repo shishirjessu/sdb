@@ -2,12 +2,6 @@
 #include <process.hpp>
 
 namespace sdb {
-    BreakpointSite::~BreakpointSite() {
-        if (theEnabled) {
-            disable();
-        }
-    }
-
     void BreakpointSite::enable() {
         if (theEnabled) {
             return;

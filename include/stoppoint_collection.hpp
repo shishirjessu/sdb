@@ -28,7 +28,7 @@ namespace sdb {
 
         bool stoppointEnabledAtAddress(VirtualAddress anAddress) const {
             auto it = findByAddress(anAddress);
-            return it != theStoppoints.end() and it->isEnabled();
+            return it != theStoppoints.end() and it->get()->isEnabled();
         }
 
         template <typename Self>

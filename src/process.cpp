@@ -121,18 +121,35 @@ namespace sdb {
 
         if (theProcessState == ProcessState::Stopped and theIsAttached) {
             readAllRegisters();
+
+            auto myInstrBegin = getPc() - 1;
+            if (myStopReason.theStatus == SIGTRAP and
+                theStoppoints.stoppointEnabledAtAddress(myInstrBegin)) {
+                setPc(myInstrBegin);
+            }
         }
 
         return myStopReason;
     }
 
     void Process::resume() {
+        stepOverBreakpointIfExists();
+
         if (ptrace(PTRACE_CONT, thePid, nullptr, nullptr) < 0) {
             Error::sendErrno("resume failed\n");
             std::terminate();
         }
 
         theProcessState = ProcessState::Running;
+    }
+
+    void Process::stepOverBreakpointIfExists() {
+        VirtualAddress myPc = getPc();
+        if (!theStoppoints.stoppointEnabledAtAddress(myPc)) {
+            return;
+        }
+
+        stepInstruction();
     }
 
     pid_t Process::getPid() const {
@@ -158,6 +175,27 @@ namespace sdb {
             Error::send(std::string("Could not write register: ") +
                         std::strerror(err));
         }
+    }
+
+    StopReason Process::stepInstruction() {
+        BreakpointSite* myBreakpointSite = nullptr;
+        VirtualAddress myPc = getPc();
+
+        if (theStoppoints.stoppointEnabledAtAddress(myPc)) {
+            myBreakpointSite = std::addressof(theStoppoints.getByAddress(myPc));
+            myBreakpointSite->disable();
+        }
+
+        if (ptrace(PTRACE_SINGLESTEP, thePid, nullptr, nullptr) < 0) {
+            Error::sendErrno("Failed to single step");
+        }
+
+        auto myReason = waitOnSignal();
+        if (myBreakpointSite) {
+            myBreakpointSite->enable();
+        }
+
+        return myReason;
     }
 
     void Process::readAllRegisters() {
@@ -193,6 +231,11 @@ namespace sdb {
     VirtualAddress Process::getPc() const {
         return VirtualAddress{std::get<uint64_t>(
             theRegisters.read(findRegisterById(RegisterId::rip)))};
+    }
+
+    void Process::setPc(VirtualAddress anAddress) {
+        theRegisters.write(findRegisterById(RegisterId::rip),
+                           std::to_underlying(anAddress));
     }
 
     BreakpointSite& Process::createBreakpointSite(VirtualAddress anAddress) {

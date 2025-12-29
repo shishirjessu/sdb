@@ -33,7 +33,35 @@ namespace sdb {
 
         ProcessState theStopState{};
         std::uint8_t theStatus{};
+
+        bool operator==(const StopReason& other) const = default;
     };
+
+    inline std::ostream& operator<<(std::ostream& aStream,
+                                    const StopReason& aReason) {
+        aStream << "StopReason{";
+
+        switch (aReason.theStopState) {
+            case ProcessState::Exited:
+                aStream << "Exited, status=" << +aReason.theStatus;
+                break;
+
+            case ProcessState::Terminated:
+                aStream << "Terminated, signal="
+                        << strsignal(aReason.theStatus);
+                break;
+
+            case ProcessState::Stopped:
+                aStream << "Stopped, signal=" << strsignal(aReason.theStatus);
+                break;
+
+            default:
+                aStream << "Unknown";
+                break;
+        }
+
+        return aStream << '}';
+    }
 
     class Process {
 
@@ -64,6 +92,7 @@ namespace sdb {
         }
 
         VirtualAddress getPc() const;
+        void setPc(VirtualAddress anAddress);
 
         BreakpointSite& createBreakpointSite(VirtualAddress anAddress);
 
@@ -76,6 +105,8 @@ namespace sdb {
         void writeFloatingPointRegisters(const user_fpregs_struct& fprs);
         void writeGeneralPurposeRegisters(const user_regs_struct& grps);
         void writeUserArea(std::size_t anOffset, std::uint64_t aData);
+
+        StopReason stepInstruction();
 
         ~Process();
 
@@ -93,5 +124,7 @@ namespace sdb {
 
         Registers theRegisters{*this};
         StoppointCollection<BreakpointSite> theStoppoints;
+
+        void stepOverBreakpointIfExists();
     };
 } // namespace sdb

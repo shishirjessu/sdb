@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <fmt/format.h>
+#include <ostream>
 #include <utility>
 #include <variant>
 
@@ -58,6 +60,12 @@ namespace sdb {
         auto toRet = a;
         a = VirtualAddress(std::to_underlying(a) + 1);
         return toRet;
+    }
+
+    inline std::ostream& operator<<(std::ostream& aStream,
+                                    const VirtualAddress& anAddress) {
+        aStream << fmt::format("{:#04x}", std::to_underlying(anAddress));
+        return aStream;
     }
 
     template <typename EnumT>
