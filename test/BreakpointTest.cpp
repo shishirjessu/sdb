@@ -40,4 +40,20 @@ namespace sdb::test {
         EXPECT_EQ(toStringView(data), "Hello, sdb!\n");
     }
 
+    TEST(BreakpointTest, RemoveBreakpoint) {
+        auto myProcess = Process::launch("test/targets/hello_sdb", true);
+
+        auto& myBp1 = myProcess->createBreakpointSite(VirtualAddress{1});
+        auto& myBp2 = myProcess->createBreakpointSite(VirtualAddress{2});
+
+        auto& myBreakpointSites = myProcess->getBreakpointSites();
+        EXPECT_EQ(myBreakpointSites.size(), 2);
+
+        myProcess->getBreakpointSites().removeByAddress(myBp1.getAddress());
+        EXPECT_EQ(myBreakpointSites.size(), 1);
+
+        myProcess->getBreakpointSites().removeById(myBp2.getId());
+        EXPECT_EQ(myBreakpointSites.size(), 0);
+    }
+
 } // namespace sdb::test
