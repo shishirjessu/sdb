@@ -13,19 +13,13 @@ namespace sdb::test {
         Pipe myPipe(false);
 
         auto myProcess =
-            Process::launch("/home/svjessu/.cache/bazel/_bazel_svjessu/"
-                            "ce5c89faefd4b767a8a0fed99703340f/execroot/_main/"
-                            "bazel-out/k8-dbg/bin/test/targets/hello_sdb",
-                            true, myPipe.getWrite());
+            Process::launch("test/targets/hello_sdb", true, myPipe.getWrite());
 
         myPipe.closeWrite();
 
-        VirtualAddress myLoadAddress = get_load_address(
-            myProcess->getPid(),
-            get_entry_point_offset(
-                "/home/svjessu/.cache/bazel/_bazel_svjessu/"
-                "ce5c89faefd4b767a8a0fed99703340f/execroot/_main/bazel-out/"
-                "k8-dbg/bin/test/targets/hello_sdb"));
+        VirtualAddress myLoadAddress =
+            get_load_address(myProcess->getPid(),
+                             get_entry_point_offset("test/targets/hello_sdb"));
 
         auto& myBp = myProcess->createBreakpointSite(myLoadAddress);
         myBp.enable();
