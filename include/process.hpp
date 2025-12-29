@@ -1,11 +1,15 @@
 #pragma once
 
+#include <breakpoint_site.hpp>
 #include <filesystem>
 #include <memory>
 #include <registers.hpp>
+#include <stoppoint_collection.hpp>
 #include <string_view>
 #include <sys/ptrace.h>
 #include <sys/types.h>
+
+#include <vector>
 
 namespace sdb {
 
@@ -61,6 +65,14 @@ namespace sdb {
 
         VirtualAddress getPc() const;
 
+        BreakpointSite& createBreakpointSite(VirtualAddress anAddress);
+
+        template <typename Self>
+        StoppointCollection<BreakpointSite>&
+        getBreakpointSites(this Self&& self) {
+            return self.theStoppoints;
+        }
+
         void writeFloatingPointRegisters(const user_fpregs_struct& fprs);
         void writeGeneralPurposeRegisters(const user_regs_struct& grps);
         void writeUserArea(std::size_t anOffset, std::uint64_t aData);
@@ -80,5 +92,6 @@ namespace sdb {
         bool theIsAttached{false};
 
         Registers theRegisters{*this};
+        StoppointCollection<BreakpointSite> theStoppoints;
     };
 } // namespace sdb

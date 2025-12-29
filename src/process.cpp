@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <error.hpp>
+#include <fmt/format.h>
 #include <iostream>
 #include <pipe.hpp>
 #include <register_info.hpp>
@@ -186,6 +187,16 @@ namespace sdb {
     VirtualAddress Process::getPc() const {
         return VirtualAddress{std::get<uint64_t>(
             theRegisters.read(findRegisterById(RegisterId::rip)))};
+    }
+
+    BreakpointSite& Process::createBreakpointSite(VirtualAddress anAddress) {
+        if (theStoppoints.contains_address(anAddress)) [[unlikely]] {
+            Error::send(fmt::format("Trying to create breakpoint at address {}",
+                                    std::to_underlying(anAddress)));
+        }
+
+        return theStoppoints.push(
+            std::make_unique<BreakpointSite>(*this, anAddress));
     }
 
     Process::~Process() {

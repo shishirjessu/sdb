@@ -1,2 +1,4 @@
+build --repo_env=CC=/usr/bin/clang-20
+build --repo_env=CXX=/usr/bin/clang++-20
 common --enable_bzlmod
 

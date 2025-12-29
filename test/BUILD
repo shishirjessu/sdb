@@ -8,5 +8,6 @@ cc_test(
     data = [
         "//test/targets:reg_write",
         "//test/targets:reg_read",
+        "//test/targets:run_forever",
     ]
 )

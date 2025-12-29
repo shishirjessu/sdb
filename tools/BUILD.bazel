@@ -4,7 +4,7 @@ cc_binary(
     deps = ["//src:libsdb", "@cli11//:cli11", "@fmt//:fmt"],
     visibility = ["//visibility:public"],
     copts = [
-        "-std=c++20",
+        "-std=c++23",
     ],
     linkopts = [
         "-ledit",

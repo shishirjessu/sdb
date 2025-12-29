@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <utility>
 #include <variant>
 
 namespace sdb {
@@ -45,6 +46,18 @@ namespace sdb {
                                                 std::uint64_t b) noexcept {
         a = a - b;
         return a;
+    }
+
+    inline constexpr VirtualAddress operator++(VirtualAddress& a) noexcept {
+        a = VirtualAddress(std::to_underlying(a) + 1);
+        return a;
+    }
+
+    inline constexpr VirtualAddress operator++(VirtualAddress& a,
+                                               int) noexcept {
+        auto toRet = a;
+        a = VirtualAddress(std::to_underlying(a) + 1);
+        return toRet;
     }
 
     template <typename EnumT>

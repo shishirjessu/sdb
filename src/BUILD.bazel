@@ -3,10 +3,10 @@
 cc_library(
     name = "libsdb",
     srcs = glob(["**/*.cpp"]),
-    deps = ["//include:headers", "//include/libsdb:libsdb"],
+    deps = ["//include:headers", "//include/libsdb:libsdb", "@fmt//:fmt"],
     includes = ["include", "//include"],
     visibility = ["//visibility:public"],
-    copts = ["-std=c++20"],
+    copts = ["-std=c++23"],
 )
 
 
