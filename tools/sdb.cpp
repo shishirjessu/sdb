@@ -1,4 +1,5 @@
 #include <CLI/CLI.hpp>
+#include <breakpoint_operations.hpp>
 #include <editline/readline.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -104,6 +105,8 @@ void readInput(std::unique_ptr<sdb::Process>& aProcess) {
     add_reg_reading(myRepl, *aProcess);
     add_reg_writing(myRepl, *aProcess);
 
+    add_breakpoint_operations(myRepl, *aProcess);
+
     char* myLine = nullptr;
     while ((myLine = readline("sdb> ")) != nullptr) {
         std::string myLineStr{};
@@ -155,6 +158,7 @@ int main(int argc, char** argv) {
         readInput(myProcess);
     } else if (myFileOpt->count() > 0) {
         myProcess = sdb::Process::launch(myFilename);
+        fmt::print("Launched process with PID {}\n", myProcess->getPid());
         readInput(myProcess);
     }
 }

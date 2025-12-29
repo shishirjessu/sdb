@@ -1,7 +1,17 @@
+cc_library(
+    name = "tools",
+    hdrs = ["breakpoint_operations.hpp"],
+    srcs = ["breakpoint_operations.cpp"],
+    deps = ["//src:libsdb", "@cli11//:cli11"],
+    includes = ["."],
+    visibility = ["//visibility:public"],
+)
+
+
 cc_binary(
     name = "sdb",
     srcs = ["sdb.cpp"],
-    deps = ["//src:libsdb", "@cli11//:cli11", "@fmt//:fmt"],
+    deps = ["//src:libsdb", "@cli11//:cli11", "@fmt//:fmt", "//tools"],
     visibility = ["//visibility:public"],
     copts = [
         "-std=c++23",

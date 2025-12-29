@@ -47,7 +47,7 @@ namespace sdb {
 
         if (errno != 0) {
             Error::sendErrno(
-                fmt::format("Retrieving memory at address {} failed",
+                fmt::format("Retrieving memory at address {:#04x} failed\n",
                             std::to_underlying(theAddress)));
         }
 

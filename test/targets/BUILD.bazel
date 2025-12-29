@@ -1,0 +1,42 @@
+COMMON_COPTS = [
+    "-O0",
+    "-g",
+    "-fPIE",
+]
+
+COMMON_LINKOPTS = [
+    "-pie",
+    "-fuse-ld=bfd",
+]
+
+cc_binary(
+    name = "reg_write",
+    srcs = ["reg_write.S"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "reg_read",
+    srcs = ["reg_read.S"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "run_forever",
+    srcs = ["run_forever.cpp"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "hello_sdb",
+    srcs = ["hello_sdb.cpp"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    visibility = ["//visibility:public"],
+)
