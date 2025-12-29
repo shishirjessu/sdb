@@ -6,6 +6,7 @@
 #include <iostream>
 #include <pipe.hpp>
 #include <register_info.hpp>
+#include <sys/personality.h>
 #include <types.hpp>
 
 #include <stdexcept>
@@ -67,6 +68,11 @@ namespace sdb {
             Error::sendErrno("fork failed\n");
 
         } else if (myPid == 0) {
+            // Disable ASLR, to make it easier to test programs
+            // by keeping addresses of instructions constant across
+            // runs
+            personality(ADDR_NO_RANDOMIZE);
+
             myChildToParentPipe.closeRead();
 
             if (aStdoutReplacement.has_value()) {
