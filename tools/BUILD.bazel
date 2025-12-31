@@ -1,7 +1,7 @@
 cc_library(
     name = "tools",
-    hdrs = ["breakpoint_operations.hpp"],
-    srcs = ["breakpoint_operations.cpp"],
+    hdrs = ["breakpoint_operations.hpp", "memory_commands.hpp"],
+    srcs = ["breakpoint_operations.cpp", "memory_commands.cpp"],
     deps = ["//src:libsdb", "@cli11//:cli11"],
     includes = ["."],
     visibility = ["//visibility:public"],

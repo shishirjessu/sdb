@@ -18,7 +18,7 @@ namespace sdb {
             auto bp_list = bp->add_subcommand(
                 "list", "List all breakpoints in the current process");
 
-            bp_list->callback([&]() {
+            bp_list->callback([&aProcess]() {
                 auto& myBreakpointSites = aProcess.getBreakpointSites();
                 if (myBreakpointSites.empty()) {
                     fmt::print("No breakpoints set\n");
@@ -30,7 +30,6 @@ namespace sdb {
                                    aSite.isEnabled() ? "enabled" : "disabled");
                     });
                 }
-                return;
             });
         }
 
@@ -39,11 +38,14 @@ namespace sdb {
             auto bp_set = bp->add_subcommand(
                 "set", "Set a breakpoint at the given address");
 
-            std::string myAddressStr{};
+            CLI::Option* myAddressOpt = bp_set->add_option("address")
+                                            ->required()
+                                            ->capture_default_str();
 
-            bp_set->add_option("address", myAddressStr)->required();
+            bp_set->callback([=, &aProcess]() {
+                const std::string& myAddressStr =
+                    myAddressOpt->as<std::string>();
 
-            bp_set->callback([&]() {
                 auto myOptionalAddr =
                     sdb::toIntegral<std::uint64_t>(myAddressStr);
                 if (!myOptionalAddr) {
@@ -62,11 +64,12 @@ namespace sdb {
             auto bp_enable = bp->add_subcommand(
                 "enable", "Enable a breakpoint with the given ID");
 
-            std::string myIdStr{};
+            CLI::Option* myIdOpt =
+                bp_enable->add_option("id")->required()->capture_default_str();
 
-            bp_enable->add_option("id", myIdStr)->required();
+            bp_enable->callback([=, &aProcess]() {
+                const std::string& myIdStr = myIdOpt->as<std::string>();
 
-            bp_enable->callback([&]() {
                 auto myOptionalId = sdb::toIntegral<std::uint32_t>(myIdStr);
                 auto& myBreakpointSites = aProcess.getBreakpointSites();
                 myBreakpointSites
@@ -80,11 +83,12 @@ namespace sdb {
             auto bp_disable = bp->add_subcommand(
                 "disable", "Disable a breakpoint with the given ID");
 
-            std::string myIdStr{};
+            CLI::Option* myIdOpt =
+                bp_disable->add_option("id")->required()->capture_default_str();
 
-            bp_disable->add_option("id", myIdStr)->required();
+            bp_disable->callback([=, &aProcess]() {
+                const std::string& myIdStr = myIdOpt->as<std::string>();
 
-            bp_disable->callback([&]() {
                 auto myOptionalId = sdb::toIntegral<std::uint32_t>(myIdStr);
                 auto& myBreakpointSites = aProcess.getBreakpointSites();
                 myBreakpointSites
@@ -98,17 +102,19 @@ namespace sdb {
             auto bp_delete = bp->add_subcommand(
                 "delete", "Delete a breakpoint with the given ID");
 
-            std::string myIdStr{};
+            CLI::Option* myIdOpt =
+                bp_delete->add_option("id")->required()->capture_default_str();
 
-            bp_delete->add_option("id", myIdStr)->required();
+            bp_delete->callback([=, &aProcess]() {
+                const std::string& myIdStr = myIdOpt->as<std::string>();
 
-            bp_delete->callback([&]() {
                 auto myOptionalId = sdb::toIntegral<std::uint32_t>(myIdStr);
                 auto& myBreakpointSites = aProcess.getBreakpointSites();
                 myBreakpointSites.removeById(
                     sdb::BreakpointSite::IdTypeT{*myOptionalId});
             });
         }
+
     } // namespace
 
     void add_breakpoint_operations(CLI::App& aRepl, sdb::Process& aProcess) {

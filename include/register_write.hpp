@@ -49,16 +49,15 @@ namespace sdb {
         return myResult;
     }
 
-    template <std::size_t VectorSizeT>
-    std::optional<std::array<std::byte, VectorSizeT>>
-    toVector(const std::string& aValueToWrite) {
-
+    template <typename Container, typename T = std::byte>
+    std::optional<Container> toVectorImpl(const std::string& aValueToWrite,
+                                          size_t expectedSize = 0) {
         if (aValueToWrite.size() <= 2 || !aValueToWrite.starts_with('[') ||
             !aValueToWrite.ends_with(']')) {
             return std::nullopt;
         }
 
-        std::array<std::byte, VectorSizeT> myResult{};
+        Container result;
 
         auto myView = aValueToWrite | std::views::drop(1) |
                       std::views::take(aValueToWrite.size() - 2) |
@@ -70,31 +69,47 @@ namespace sdb {
                 static_cast<size_t>(std::ranges::distance(aRange))};
         };
 
-        size_t myIndex = 0;
-
+        size_t count = 0;
         for (auto&& part : myView) {
-            if (myIndex >= VectorSizeT) {
-                return std::nullopt;
+            if (expectedSize && count >= expectedSize) {
+                return std::nullopt; // too many elements for fixed-size array
             }
 
             auto mySv = to_sv(part);
             if (mySv.size() != 4) {
-                return std::nullopt;
+                return std::nullopt; // enforce "0xNN" format
             }
 
-            auto myByte = toIntegral<std::byte>(mySv);
+            auto myByte = toIntegral<T>(mySv);
             if (!myByte) {
                 return std::nullopt;
             }
 
-            myResult[myIndex++] = *myByte;
+            if constexpr (std::is_same_v<Container, std::vector<T>>) {
+                result.push_back(*myByte);
+            } else {
+                result[count] = *myByte;
+            }
+            ++count;
         }
 
-        if (myIndex != VectorSizeT) {
+        if (expectedSize && count != expectedSize) {
             return std::nullopt;
         }
 
-        return myResult;
+        return result;
+    }
+
+    template <std::size_t VectorSizeT>
+    std::optional<std::array<std::byte, VectorSizeT>>
+    toVector(const std::string& aValueToWrite) {
+        return toVectorImpl<std::array<std::byte, VectorSizeT>>(aValueToWrite,
+                                                                VectorSizeT);
+    }
+
+    std::optional<std::vector<std::byte>> inline toVectorDynamic(
+        const std::string& aValueToWrite) {
+        return toVectorImpl<std::vector<std::byte>>(aValueToWrite);
     }
 
     RegisterValueT parseRegisterValue(const RegisterInfo& aRegisterInfo,

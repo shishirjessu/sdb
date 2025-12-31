@@ -20,5 +20,6 @@ cc_test(
         "//test/targets:reg_read",
         "//test/targets:run_forever",
         "//test/targets:hello_sdb",
+        "//test/targets:memory",
     ]
 )

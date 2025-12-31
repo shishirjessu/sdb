@@ -4,6 +4,7 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <iostream>
+#include <memory_commands.hpp>
 #include <process.hpp>
 #include <ranges>
 #include <register_write.hpp>
@@ -17,12 +18,14 @@ void add_reg_reading(CLI::App& theRepl, sdb::Process& aProcess) {
 
     auto reg = theRepl.get_subcommand("reg");
 
-    std::string myRegisterName{};
     auto reg_read = reg->add_subcommand("read", "Read from register");
-    reg_read->add_option("register", myRegisterName)->required();
+
+    auto* myRegisterOpt =
+        reg_read->add_option("register")->required()->capture_default_str();
 
     reg_read->callback([&]() {
-        // TODO: implement support for reading all registers
+        const std::string& myRegisterName = myRegisterOpt->as<std::string>();
+
         auto& myRegisters = aProcess.getRegisters();
         try {
             const RegisterInfo& myRegister = findRegisterByName(myRegisterName);
@@ -49,15 +52,20 @@ void add_reg_reading(CLI::App& theRepl, sdb::Process& aProcess) {
 void add_reg_writing(CLI::App& aRepl, sdb::Process& aProcess) {
     auto reg = aRepl.get_subcommand("reg");
 
-    std::string myRegister{};
-    std::string myValue{};
-
     auto reg_write = reg->add_subcommand("write", "Write to register");
-    reg_write->add_option("register", myRegister)->required();
-    reg_write->add_option("value", myValue)->required();
 
-    reg_write->callback(
-        [&]() { handleRegisterWrite(aProcess, myRegister, myValue); });
+    auto* myRegisterOpt =
+        reg_write->add_option("register")->required()->capture_default_str();
+
+    auto* myValueOpt =
+        reg_write->add_option("value")->required()->capture_default_str();
+
+    reg_write->callback([&]() {
+        const std::string& myRegister = myRegisterOpt->as<std::string>();
+        const std::string& myValue = myValueOpt->as<std::string>();
+
+        handleRegisterWrite(aProcess, myRegister, myValue);
+    });
 }
 
 void print_stop_reason(const sdb::Process& aProcess,
@@ -117,6 +125,7 @@ void readInput(std::unique_ptr<sdb::Process>& aProcess) {
     add_reg_writing(myRepl, *aProcess);
 
     add_breakpoint_operations(myRepl, *aProcess);
+    add_memory_commands(myRepl, *aProcess);
 
     char* myLine = nullptr;
     while ((myLine = readline("sdb> ")) != nullptr) {
