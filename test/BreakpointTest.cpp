@@ -8,7 +8,7 @@
 #include <process.hpp>
 
 namespace sdb::test {
-    TEST(ProcessTest, CreateBreakpointSites) {
+    TEST(BreakpointTest, CreateBreakpointSites) {
         auto myProc = Process::launch("test/targets/run_forever");
 
         const auto& myBreakpointSites = myProc->getBreakpointSites();
@@ -48,7 +48,7 @@ namespace sdb::test {
         }
     }
 
-    TEST(ProcessTest, MissingBreakpointSites) {
+    TEST(BreakpointTest, MissingBreakpointSites) {
         auto myProc = Process::launch("test/targets/run_forever");
         const auto& cproc = myProc;
 
@@ -64,7 +64,7 @@ namespace sdb::test {
                      sdb::Error);
     }
 
-    TEST(ProcessTest, IteratingOverBreakpoints) {
+    TEST(BreakpointTest, IteratingOverBreakpoints) {
         auto myProc = Process::launch("test/targets/run_forever");
         const auto& cproc = myProc;
 
