@@ -56,6 +56,22 @@ namespace sdb {
             return **myIt;
         }
 
+        std::vector<StoppointT*> getInRange(VirtualAddress aRangeBegin,
+                                            VirtualAddress aRangeEnd) const {
+            std::vector<StoppointT*> myResult;
+
+            for (auto&& myStoppoint : theStoppoints) {
+                auto myAddr = myStoppoint->getAddress();
+                if (myStoppoint->isEnabled() and aRangeBegin <= myAddr and
+                    myAddr <= aRangeEnd) {
+
+                    myResult.emplace_back(myStoppoint.get());
+                }
+            }
+
+            return myResult;
+        }
+
         void removeById(StoppointT::IdTypeT anId) {
             auto it = findById(anId);
             if (it == theStoppoints.end()) {

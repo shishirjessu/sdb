@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <bit.hpp>
+#include <process.hpp>
 #include <types.hpp>
 
 #include <error.hpp>
@@ -36,6 +37,22 @@ namespace sdb {
         if (process_vm_readv(aPid, &myLocalDesc, 1, myRemoteDescs.data(),
                              myRemoteDescs.size(), 0) < 0) {
             Error::sendErrno("Failed to read process memory");
+        }
+
+        return myResult;
+    }
+
+    std::vector<std::byte> readMemoryWithoutBreakpointTraps(
+        Process& aProcess, VirtualAddress anAddress, std::size_t anAmount) {
+        std::vector<std::byte> myResult =
+            readMemory(aProcess.getPid(), anAddress, anAmount);
+
+        auto& myBreakpointSites = aProcess.getBreakpointSites();
+        for (auto&& mySiteInRange :
+             myBreakpointSites.getInRange(anAddress, anAddress + anAmount)) {
+            auto myOffset = std::to_underlying(mySiteInRange->getAddress()) -
+                            std::to_underlying(anAddress);
+            myResult[myOffset] = mySiteInRange->getSavedData();
         }
 
         return myResult;

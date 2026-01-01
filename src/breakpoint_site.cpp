@@ -69,4 +69,8 @@ namespace sdb {
         return theAddress;
     }
 
+    std::byte BreakpointSite::getSavedData() const {
+        return theSavedData;
+    }
+
 } // namespace sdb

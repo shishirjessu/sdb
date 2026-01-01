@@ -1,5 +1,6 @@
 #include <CLI/CLI.hpp>
 #include <breakpoint_operations.hpp>
+#include <disassembler.hpp>
 #include <editline/readline.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -12,6 +13,13 @@
 #include <unistd.h>
 #include <utils.hpp>
 #include <vector>
+
+void printDisassembly(const std::vector<sdb::Instruction>& anInstructions) {
+    for (auto& myInstr : anInstructions) {
+        fmt::print("{:#018x}: {}\n", std::to_underlying(myInstr.theAddress),
+                   myInstr.theInstruction);
+    }
+}
 
 void add_reg_reading(CLI::App& theRepl, sdb::Process& aProcess) {
     using namespace sdb;
@@ -94,31 +102,44 @@ void print_stop_reason(const sdb::Process& aProcess,
     std::cout << '\n';
 }
 
-void add_continue(CLI::App& aRepl, sdb::Process& aProcess) {
+void handle_stop(const sdb::Process& aProcess, sdb::StopReason aStopReason,
+                 sdb::Disassembler& aDisassembler) {
+    print_stop_reason(aProcess, aStopReason);
+    if (aStopReason.theStopState == sdb::ProcessState::Stopped) {
+        auto myDisassembledInstructions = aDisassembler.disassemble(5);
+        printDisassembly(myDisassembledInstructions);
+    }
+}
+
+void add_continue(CLI::App& aRepl, sdb::Process& aProcess,
+                  sdb::Disassembler& aDisassembler) {
     auto continue_cmd = aRepl.add_subcommand("c", "Continue process");
 
     continue_cmd->callback([&]() {
         aProcess.resume();
         auto myStopReason = aProcess.waitOnSignal();
-        print_stop_reason(aProcess, myStopReason);
+        handle_stop(aProcess, myStopReason, aDisassembler);
     });
 }
 
-void add_step(CLI::App& aRepl, sdb::Process& aProcess) {
+void add_step(CLI::App& aRepl, sdb::Process& aProcess,
+              sdb::Disassembler& aDisassembler) {
     auto step_cmd =
         aRepl.add_subcommand("s", "Step forward by one instruction");
 
     step_cmd->callback([&]() {
         auto myStopReason = aProcess.stepInstruction();
-        print_stop_reason(aProcess, myStopReason);
+        handle_stop(aProcess, myStopReason, aDisassembler);
     });
 }
 
 void readInput(std::unique_ptr<sdb::Process>& aProcess) {
     CLI::App myRepl;
 
-    add_continue(myRepl, *aProcess);
-    add_step(myRepl, *aProcess);
+    sdb::Disassembler myDisassembler(*aProcess);
+
+    add_continue(myRepl, *aProcess, myDisassembler);
+    add_step(myRepl, *aProcess, myDisassembler);
 
     myRepl.add_subcommand("reg", "Register operations");
     add_reg_reading(myRepl, *aProcess);

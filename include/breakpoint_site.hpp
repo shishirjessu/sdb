@@ -52,6 +52,7 @@ namespace sdb {
 
         IdTypeT getId() const;
         VirtualAddress getAddress() const;
+        std::byte getSavedData() const;
 
       private:
         bool theEnabled{false};

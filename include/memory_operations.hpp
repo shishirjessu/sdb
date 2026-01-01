@@ -4,11 +4,15 @@
 #include <span>
 #include <vector>
 
+#include <process.hpp>
 #include <types.hpp>
 
 namespace sdb {
     std::vector<std::byte> readMemory(pid_t aPid, VirtualAddress anAddress,
                                       std::size_t anAmount);
+
+    std::vector<std::byte> readMemoryWithoutBreakpointTraps(
+        Process& aProcess, VirtualAddress anAddress, std::size_t anAmount);
 
     void writeMemory(pid_t aPid, VirtualAddress anAddress,
                      std::span<const std::byte> aMemory);
